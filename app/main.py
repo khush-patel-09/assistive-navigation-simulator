@@ -8,6 +8,7 @@ from ultralytics import YOLO
 from PIL import Image
 
 from app.sensors.distance_sensor import simulate_distance
+from app.sensors.sensor_fusion import calculate_risk, classify_risk
 
 st.set_page_config(
     page_title="Assistive Navigation Simulator",
@@ -63,10 +64,14 @@ if uploaded_file:
         )
         distance = simulate_distance()
 
+        risk_score = calculate_risk(confidence, distance)
+        risk_level = classify_risk(risk_score)
+
         st.write(
             f"{object_name} | "
             f"Confidence: {confidence:.2f} | "
-            f"Distance: {distance} m"
+            f"Distance: {distance} m | "
+            f"Risk: {risk_level} ({risk_score})"
         )
 
 else:
