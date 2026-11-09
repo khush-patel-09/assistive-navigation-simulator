@@ -1,49 +1,60 @@
 
 import streamlit as st
+from ultralytics import YOLO
+from PIL import Image
 
 st.set_page_config(
     page_title="Assistive Navigation Simulator",
-    page_icon="",
     layout="wide"
 )
 
 st.title("Assistive Navigation Simulator")
 st.caption("AI-powered obstacle detection and navigation")
 
-st.divider()
+@st.cache_resource
+def load_model():
+    return YOLO("yolo11n.pt")
 
-# Navigation status
-col1, col2, col3 = st.columns(3)
+model = load_model()
 
-col1.metric("Detected Objects", 0)
-col2.metric("Risk Level", "Safe")
-col3.metric("Navigation", "Ready")
+uploaded_file = st.file_uploader(
+    "Upload an image",
+    type=["jpg", "jpeg", "png"]
+)
 
-st.divider()
+if uploaded_file:
+    image = Image.open(uploaded_file).convert("RGB")
 
-# Main interface
-left, right = st.columns(2)
+    results = model(image, conf=0.15)
 
-with left:
-    st.subheader("Environment")
-    st.info("Upload an image to begin obstacle detection.")
+    result = results[0]
+    detected_objects = result.boxes
 
-    uploaded_file = st.file_uploader(
-        "Upload an image",
-        type=["jpg", "jpeg", "png"]
-    )
+    annotated_image = result.plot()
 
-    if uploaded_file:
-        st.image(uploaded_file, caption="Uploaded Environment")
+    col1, col2 = st.columns(2)
 
-with right:
-    st.subheader("Navigation Analysis")
+    with col1:
+        st.subheader("Original Image")
+        st.image(image)
 
-    st.write("**Sensor Fusion**")
-    st.info("Waiting for sensor data")
+    with col2:
+        st.subheader("Object Detection")
+        st.image(annotated_image)
 
-    st.write("**Risk Zones**")
-    st.info("No obstacles detected")
+    st.metric("Detected Objects", len(detected_objects))
 
-    st.write("**Navigation Recommendation**")
-    st.info("Waiting for environment analysis")
+    st.subheader("Detection Results")
+
+    for box in detected_objects:
+        class_id = int(box.cls[0])
+        confidence = float(box.conf[0])
+
+        object_name = model.names[class_id]
+
+        st.write(
+            f"{object_name} — Confidence: {confidence:.2f}"
+        )
+
+else:
+    st.info("Upload an image to begin detection.")
