@@ -1,7 +1,13 @@
+import sys
+from pathlib import Path
+
+sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 import streamlit as st
 from ultralytics import YOLO
 from PIL import Image
+
+from app.sensors.distance_sensor import simulate_distance
 
 st.set_page_config(
     page_title="Assistive Navigation Simulator",
@@ -54,6 +60,13 @@ if uploaded_file:
 
         st.write(
             f"{object_name} — Confidence: {confidence:.2f}"
+        )
+        distance = simulate_distance()
+
+        st.write(
+            f"{object_name} | "
+            f"Confidence: {confidence:.2f} | "
+            f"Distance: {distance} m"
         )
 
 else:
