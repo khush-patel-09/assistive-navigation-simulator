@@ -9,6 +9,8 @@ from PIL import Image
 
 from app.sensors.distance_sensor import simulate_distance
 from app.sensors.sensor_fusion import calculate_risk, classify_risk
+from app.navigation.navigation import get_navigation_action
+from app.safety.safety_interrupt import check_critical_proximity
 
 st.set_page_config(
     page_title="Assistive Navigation Simulator",
@@ -59,20 +61,31 @@ if uploaded_file:
 
         object_name = model.names[class_id]
 
-        st.write(
-            f"{object_name} — Confidence: {confidence:.2f}"
-        )
         distance = simulate_distance()
 
         risk_score = calculate_risk(confidence, distance)
         risk_level = classify_risk(risk_score)
 
+        safety_triggered = check_critical_proximity(distance)
+
+        if safety_triggered:
+            navigation_action = "STOP"
+        else:
+            navigation_action = get_navigation_action(
+                distance,
+                risk_level
+            )
+
         st.write(
             f"{object_name} | "
             f"Confidence: {confidence:.2f} | "
             f"Distance: {distance} m | "
-            f"Risk: {risk_level} ({risk_score})"
+            f"Risk: {risk_level} ({risk_score}) | "
+            f"Action: {navigation_action}"
         )
+
+        if safety_triggered:
+            st.error("CRITICAL PROXIMITY — STOP")
 
 else:
     st.info("Upload an image to begin detection.")
